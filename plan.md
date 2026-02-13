@@ -1,316 +1,378 @@
 
-
-# 1️⃣ Project Understanding (From Problem Statement)
-
-### Core Business Workflow (Page 2)
-
-1. Applicant submits personal details
-2. System retrieves credit score
-3. If score > 800 → Approve
-4. Else → Reject
-5. If approved → Dispatch card
-
-### Key Validations (Page 3)
-
-* Age > 18
-* No previous Approved/Rejected application in last 6 months
-* Credit score auto-retrieved via PAN
-* Credit limit based on annual income slabs
-* Applicant can check status anytime
-
-### Technical Requirements (Page 5)
-
-* Frontend: React / NextJS
-* Backend: Node.js + Express (or Django)
-* NoSQL DB (MongoDB preferred)
-* JWT authentication
-* REST API
-* Cloud deployment
-* GitHub Actions CI/CD
-
 ---
 
-# 2️⃣ High-Level Architecture
+# 1️⃣  Architecture (Spring Boot Based)
 
 ```
-Client (React / NextJS)
+Frontend (React / NextJS)
         ↓
-API Gateway / Backend (Node + Express)
+Spring Boot REST API
         ↓
 Service Layer (Business Logic)
         ↓
 MongoDB (Cloud - Atlas)
         ↓
-External Credit Score Service (Mocked API)
+External Credit Score API (Mocked)
 ```
 
-### Separation of Concerns
+### Technology Stack
 
-* Presentation Layer → React
-* API Layer → Express
-* Business Layer → Services
-* Data Layer → MongoDB
-* Security Layer → JWT + Middleware
+| Layer      | Technology                    |
+| ---------- | ----------------------------- |
+| Frontend   | React / NextJS                |
+| Backend    | Spring Boot 3                 |
+| Database   | MongoDB (Spring Data MongoDB) |
+| Security   | Spring Security + JWT         |
+| Build Tool | Maven                         |
+| CI/CD      | GitHub Actions                |
+| Deployment | AWS / Render / Railway        |
 
 ---
 
-# 3️⃣ Data Model Design (MongoDB)
+# 2️⃣ Backend Project Structure (Clean Architecture)
 
-### Applicant Collection
+```
+credit-card-backend/
+ ├── src/main/java/com/lbg/creditcard/
+ │   ├── controller/
+ │   ├── service/
+ │   ├── repository/
+ │   ├── model/
+ │   ├── dto/
+ │   ├── config/
+ │   ├── security/
+ │   ├── exception/
+ │   └── util/
+ ├── src/main/resources/
+ │   ├── application.yml
+ ├── pom.xml
+```
 
-```json
-{
-  _id,
-  applicationNumber,
-  fullName,
-  dob,
-  panNumber,
-  annualIncome,
-  creditScore,
-  creditLimit,
-  status: "PENDING | APPROVED | REJECTED | DISPATCHED",
-  createdAt,
-  updatedAt
+---
+
+# 3️⃣ Dependencies (pom.xml)
+
+```xml
+<dependencies>
+    <dependency>spring-boot-starter-web</dependency>
+    <dependency>spring-boot-starter-security</dependency>
+    <dependency>spring-boot-starter-data-mongodb</dependency>
+    <dependency>spring-boot-starter-validation</dependency>
+    <dependency>spring-boot-starter-test</dependency>
+    <dependency>jjwt-api</dependency>
+    <dependency>lombok</dependency>
+</dependencies>
+```
+
+---
+
+# 4️⃣ Database Design (MongoDB)
+
+## Application Document
+
+```java
+@Document(collection = "applications")
+public class CreditCardApplication {
+
+    @Id
+    private String id;
+
+    private String applicationNumber;
+    private String fullName;
+    private LocalDate dob;
+    private String panNumber;
+    private Double annualIncome;
+
+    private Integer creditScore;
+    private Double creditLimit;
+
+    private ApplicationStatus status;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
 ```
 
-### Indexes
+### Enum
 
-* Unique index on `applicationNumber`
-* Index on `panNumber`
-* Compound index on `{ panNumber, createdAt }`
+```java
+public enum ApplicationStatus {
+    PENDING,
+    APPROVED,
+    REJECTED,
+    DISPATCHED
+}
+```
 
 ---
 
-# 4️⃣ Business Logic Implementation Plan
+# 5️⃣ Repository Layer
+
+```java
+public interface ApplicationRepository 
+        extends MongoRepository<CreditCardApplication, String> {
+
+    Optional<CreditCardApplication> 
+        findByApplicationNumber(String applicationNumber);
+
+    List<CreditCardApplication> 
+        findByPanNumberAndStatusInAndCreatedAtAfter(
+            String panNumber,
+            List<ApplicationStatus> statuses,
+            LocalDateTime date
+        );
+}
+```
+
+Indexes:
+
+* Unique index on `applicationNumber`
+* Index on `panNumber`
+
+---
+
+# 6️⃣ Business Logic Layer (Core Rules)
 
 ## Age Validation
 
-```js
-if (age < 18) reject
+```java
+if (Period.between(dob, LocalDate.now()).getYears() < 18)
+    throw new BusinessException("Applicant must be above 18");
 ```
 
 ## 6-Month Rule
 
-Query:
-
-```js
-find({
-  panNumber,
-  status: { $in: ["APPROVED", "REJECTED"] },
-  createdAt: { $gte: sixMonthsAgo }
-})
-```
+Query applications within 6 months having APPROVED/REJECTED.
 
 ## Credit Score Retrieval
 
-* Create external mock API
-* Example:
+Use `RestTemplate` or `WebClient`:
 
-```js
-GET /credit-score/:pan
+```java
+public Integer fetchCreditScore(String pan) {
+    return restTemplate.getForObject(
+        "http://credit-service/score/" + pan,
+        Integer.class
+    );
+}
 ```
 
 ## Approval Rule
 
-```js
-if (creditScore > 800) APPROVED
-else REJECTED
+```java
+if (creditScore > 800)
+    status = APPROVED;
+else
+    status = REJECTED;
 ```
 
-## Credit Limit Logic
+## Credit Limit Calculation
 
-| Annual Income | Credit Limit      |
-| ------------- | ----------------- |
-| <= 2L         | 50,000            |
-| 2L – 3L       | 75,000            |
-| 3L – 5L       | 10,00,000         |
-| > 5L          | Manual/Subjective |
+Encapsulate in utility:
 
-Encapsulate in:
-
-```js
-calculateCreditLimit(income)
-```
-
----
-
-# 5️⃣ REST API Design
-
-## Auth APIs
-
-* POST `/auth/register`
-* POST `/auth/login`
-
-## Application APIs
-
-* POST `/applications`
-* GET `/applications/:applicationNumber`
-* GET `/applications?pan=XXXX`
-* PATCH `/applications/:id/status`
-
-## Internal API
-
-* GET `/credit-score/:pan`
-
----
-
-# 6️⃣ Folder Structure (Backend)
-
-```
-backend/
- ├── src/
- │   ├── controllers/
- │   ├── services/
- │   ├── models/
- │   ├── routes/
- │   ├── middleware/
- │   ├── utils/
- │   ├── config/
- │   └── app.js
- ├── tests/
- └── package.json
+```java
+public Double calculateLimit(Double income) {
+    if (income <= 200000) return 50000.0;
+    if (income <= 300000) return 75000.0;
+    if (income <= 500000) return 1000000.0;
+    return null; // subjective
+}
 ```
 
 ---
 
-# 7️⃣ Frontend Plan (React / NextJS)
+# 7️⃣ REST API Design (Spring Boot)
 
-## Pages
+## Auth Controller
 
-* `/apply`
-* `/login`
-* `/status`
-* `/dashboard`
+```
+POST /api/auth/register
+POST /api/auth/login
+```
 
-## Components
+## Application Controller
 
-* ApplicationForm
-* StatusTracker
-* Navbar
-* ProtectedRoute
-
-## Flow
-
-1. User login
-2. Submit application
-3. Show generated application number
-4. Track status
+```
+POST /api/applications
+GET  /api/applications/{applicationNumber}
+GET  /api/applications/status?appNo=XXX
+PATCH /api/applications/{id}/dispatch
+```
 
 ---
 
-# 8️⃣ Security Design
+# 8️⃣ DTO Design (Important for Clean API)
 
-* JWT Authentication
-* Password hashing (bcrypt)
-* Rate limiting
-* Helmet for HTTP headers
-* Environment variables (.env)
-* HTTPS in deployment
+Never expose entity directly.
 
----
+```java
+public class ApplicationRequestDTO {
+    private String fullName;
+    private LocalDate dob;
+    private String panNumber;
+    private Double annualIncome;
+}
+```
 
-# 9️⃣ CI/CD Plan (GitHub Actions)
-
-## Workflow Steps
-
-1. On push to main:
-
-    * Install dependencies
-    * Run ESLint
-    * Run tests
-    * Build frontend
-    * Deploy backend
-    * Deploy frontend
-
-## Example Jobs
-
-* `backend-test`
-* `frontend-build`
-* `deploy`
+```java
+public class ApplicationResponseDTO {
+    private String applicationNumber;
+    private ApplicationStatus status;
+    private Double creditLimit;
+}
+```
 
 ---
 
-# 🔟 Deployment Strategy
+# 9️⃣ Exception Handling
 
-### Option 1 (Simple Hackathon)
+Global handler:
 
-* Backend → Render / Railway
-* Frontend → Vercel
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<?> handleBusiness(BusinessException ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+}
+```
+
+---
+
+# 🔟 Security Design (Spring Security + JWT)
+
+### Components
+
+* JwtUtil
+* JwtFilter
+* SecurityConfig
+* CustomUserDetailsService
+
+### Flow
+
+1. Login → generate JWT
+2. Client sends JWT in header
+3. Filter validates token
+4. Set Authentication in SecurityContext
+
+---
+
+# 1️⃣1️⃣ application.yml
+
+```yaml
+spring:
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000
+```
+
+---
+
+# 1️⃣2️⃣ Logging & Observability
+
+* Use SLF4J
+* Add Spring Boot Actuator
+* Enable health endpoint
+
+---
+
+# 1️⃣3️⃣ Dockerization
+
+Dockerfile:
+
+```
+FROM eclipse-temurin:17-jdk
+COPY target/app.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+```
+
+---
+
+# 1️⃣4️⃣ GitHub Actions (Spring Boot Version)
+
+```yaml
+name: CI-CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: mvn clean install
+
+      - run: docker build -t credit-app .
+
+      - run: echo "Deploy step here"
+```
+
+---
+
+# 1️⃣5️⃣ Deployment Options
+
+### Quick Hackathon
+
+* Backend → Render (Docker)
 * DB → MongoDB Atlas
+* Frontend → Vercel
 
-### Option 2 (Advanced)
+### Enterprise Level
 
-* Dockerize
-* Deploy on AWS EC2
-* Use Nginx reverse proxy
-
----
-
-# 1️⃣1️⃣ Logging & Monitoring
-
-* Winston for structured logs
-* Morgan for HTTP logs
-* MongoDB Atlas monitoring
-* Add error middleware
+* AWS EC2 + Nginx
+* AWS ECS
+* AWS RDS if switching to SQL
+* CI/CD with Docker + ECR
 
 ---
 
-# 1️⃣2️⃣ Regulatory & Compliance Considerations
-
-* Encrypt PAN before storing
-* Mask PAN in API responses
-* Do not log sensitive data
-* Audit trail for status changes
-* Data retention policy
-
----
-
-# 1️⃣3️⃣ Hackathon Execution Timeline (2–3 Days Plan)
+# 1️⃣6️⃣ Execution Timeline (Spring Boot)
 
 ### Day 1
 
-* Setup project structure
-* MongoDB schema
-* Core API (apply + status)
-* Credit score mock
+* Project setup
+* MongoDB integration
+* Core business logic
+* Application submission API
 
 ### Day 2
 
-* JWT auth
-* Frontend integration
-* Business validations
+* JWT security
+* Credit score integration
+* Frontend connection
 * Deployment
 
 ### Day 3
 
 * CI/CD
 * Edge case testing
-* Polish UI
-* Prepare demo script
+* Logging
+* Demo prep
 
 ---
 
-# 1️⃣4️⃣ Optional Advanced Enhancements
+# 1️⃣7️⃣ Advanced Enhancements (Optional)
 
-* Async processing using queue (BullMQ)
-* Event-driven architecture
-* Kafka simulation
-* Role-based access (Admin)
-* Swagger documentation
-* Unit + Integration tests
-
----
-
-# 1️⃣5️⃣ Demo Strategy
-
-1. Show application submission
-2. Show auto credit score fetch
-3. Show approval/rejection logic
-4. Show status tracking
-5. Show GitHub Actions pipeline
-6. Show cloud deployment
+* Use WebClient (Reactive)
+* Add Kafka for event-driven dispatch
+* Role-based access (Admin / Approver)
+* Swagger (SpringDoc OpenAPI)
+* Unit tests with Mockito
+* Integration tests with Testcontainers
 
 ---
-
 
