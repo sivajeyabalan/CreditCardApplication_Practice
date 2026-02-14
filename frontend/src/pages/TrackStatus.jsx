@@ -45,7 +45,7 @@ const TrackStatus = () => {
 
   return (
     <div style={styles.wrapper}>
-      <div style={styles.hero}>
+      <div >
         <h1>Track Your Application</h1>
         <p>Stay updated on your credit card approval journey</p>
       </div>

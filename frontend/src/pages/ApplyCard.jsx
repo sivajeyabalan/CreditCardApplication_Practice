@@ -82,7 +82,7 @@ const ApplyCard = () => {
 
   return (
     <div style={styles.wrapper}>
-      <div style={styles.hero}>
+      <div >
         <h1>Apply for Credit Card</h1>
         <p>Fill the form below to submit your application</p>
       </div>
@@ -174,7 +174,7 @@ const styles = {
   },
   hero: {
     marginBottom: "30px",
-    background: "linear-gradient(135deg, #0f172a, #1e293b)",
+    background: "linear-gradient(135deg, #0f120a, #1e293b)",
     padding: "30px",
     borderRadius: "12px",
     color: "#fff",

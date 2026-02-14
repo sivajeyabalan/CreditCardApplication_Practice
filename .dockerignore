@@ -1,0 +1,33 @@
+# Git files
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Build artifacts
+target/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Test
+test-results/
+coverage/

@@ -23,7 +23,7 @@ const Sidebar = () => {
 const styles = {
   sidebar: {
     width: "220px",
-    backgroundColor: "#1e293b",
+    backgroundColor: "#FFFFFF",
     color: "#fff",
     minHeight: "100vh",
     padding: "20px",
@@ -36,7 +36,7 @@ const styles = {
     flexDirection: "column",
   },
   link: {
-    color: "#cbd5e1",
+    color: "#000000",
     textDecoration: "none",
     marginBottom: "15px",
   },
