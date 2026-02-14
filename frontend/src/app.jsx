@@ -4,7 +4,7 @@ import Login from "./pages/login";
 import Dashboard from "./pages/Dashboard";
 import ApplyCard from "./pages/ApplyCard";
 import TrackStatus from "./pages/TrackStatus";
-
+import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AuthProvider from "./context/AuthContext";
 import MainLayout from "./components/layout/Mainlayout";
@@ -20,6 +20,7 @@ function App() {
 
           {/* Public Route */}
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           {/* Protected Routes with Layout */}
           <Route

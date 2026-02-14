@@ -10,6 +10,8 @@ import com.lbg.creditcard.dto.RecentApplicationDTO;
 import com.lbg.creditcard.exception.BusinessException;
 import com.lbg.creditcard.repository.ApplicationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,12 +24,16 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Service
+    @Service
 @RequiredArgsConstructor
 public class ApplicationService {
     private final ApplicationRepository applicationRepository;
 
     public ApplicationResponseDTO submitApplication(ApplicationRequestDTO req) {
+        // Get current user's email from security context
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = userDetails.getUsername();
+
         // Age validation
         int age = Period.between(req.getDob(), LocalDate.now()).getYears();
         if (age < 18) throw new BusinessException("Applicant must be above 18");
@@ -48,13 +54,13 @@ public class ApplicationService {
         entity.setDob(req.getDob());
         entity.setPanNumber(req.getPanNumber());
         entity.setAnnualIncome(req.getAnnualIncome());
+        entity.setUserEmail(email);  // Set the user email
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setStatus(ApplicationStatus.PENDING);
 
         // Fetch credit score (mocked - random 1-10)
         Integer creditScore = fetchCreditScore();
-
 
         // Decision: >= 5 approve, < 5 reject (60% approval rate)
         if (creditScore >= 5) {
@@ -97,15 +103,19 @@ public class ApplicationService {
         return new ApplicationResponseDTO(app.getApplicationNumber(), app.getStatus(), app.getCreditLimit());
     }
 
-    // New: build dashboard DTO
-    public DashboardDTO getDashboard() {
-        long total = applicationRepository.count();
-        long approved = applicationRepository.findAll().stream().filter(a -> a.getStatus() == ApplicationStatus.APPROVED).count();
-        long pending = applicationRepository.findAll().stream().filter(a -> a.getStatus() == ApplicationStatus.PENDING).count();
-        long rejected = applicationRepository.findAll().stream().filter(a -> a.getStatus() == ApplicationStatus.REJECTED).count();
+    // Build dashboard DTO filtered by current user
+    public DashboardDTO getDashboard(String email) {
+        List<CreditCardApplication> userApplications = applicationRepository.findAll().stream()
+                .filter(a -> a.getUserEmail() != null && a.getUserEmail().equals(email))
+                .collect(Collectors.toList());
+
+        long total = userApplications.size();
+        long approved = userApplications.stream().filter(a -> a.getStatus() == ApplicationStatus.APPROVED).count();
+        long pending = userApplications.stream().filter(a -> a.getStatus() == ApplicationStatus.PENDING).count();
+        long rejected = userApplications.stream().filter(a -> a.getStatus() == ApplicationStatus.REJECTED).count();
 
         // recent 5 applications sorted by createdAt desc
-        List<RecentApplicationDTO> recent = applicationRepository.findAll().stream()
+        List<RecentApplicationDTO> recent = userApplications.stream()
                 .sorted(Comparator.comparing(CreditCardApplication::getCreatedAt).reversed())
                 .limit(5)
                 .map(a -> new RecentApplicationDTO(a.getFullName(), a.getApplicationNumber(), a.getStatus(), a.getCreditLimit(), a.getCreatedAt() != null ? a.getCreatedAt().toString() : null))

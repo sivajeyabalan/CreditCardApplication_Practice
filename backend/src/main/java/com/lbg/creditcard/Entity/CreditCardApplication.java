@@ -31,6 +31,9 @@ public class CreditCardApplication {
 
     private ApplicationStatus status;
 
+    @Indexed
+    private String userEmail;  // Track which user submitted this application
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

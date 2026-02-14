@@ -6,7 +6,7 @@ import { registerUser } from "../api/applicationApi";
 const Register = () => {
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -18,7 +18,7 @@ const Register = () => {
     setLoading(true);
     try {
       // basic client-side validation
-      if (!form.name || !form.email || !form.password) {
+      if (!form.fullName || !form.email || !form.password) {
         setError("All fields are required");
         setLoading(false);
         return;
@@ -56,7 +56,7 @@ const Register = () => {
           <p style={styles.subtitle}>Sign up and start your application journey</p>
 
           <form onSubmit={handleRegister} style={styles.form}>
-            <input name="name" placeholder="Full name" value={form.name} onChange={handleChange} required style={styles.input} />
+            <input name="fullName" placeholder="Full name" value={form.fullName} onChange={handleChange} required style={styles.input} />
             <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required style={styles.input} />
             <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required style={styles.input} />
 
