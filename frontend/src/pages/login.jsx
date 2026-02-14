@@ -1,16 +1,57 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useContext } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { loginUser } from "../api/applicationApi";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = (e) => {
+  const getErrorMessage = (err) => {
+    if (!err) return "Login failed. Check credentials.";
+    const resp = err.response?.data;
+    if (!resp) return err.message || "Login failed. Check credentials.";
+    // backend may return a string or an object
+    if (typeof resp === 'string') return resp;
+    if (typeof resp === 'object') return resp.message || JSON.stringify(resp);
+    return String(resp);
+  };
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setError("");
+
+    // client-side validation
+    if (!form.email || !form.password) {
+      setError("Please enter email and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await loginUser(form);
+      // assume backend returns { token: "..." }
+      if (res && res.token) {
+        login(res.token);
+        navigate("/dashboard");
+      } else {
+        setError("Login failed: invalid response from server");
+      }
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,20 +75,32 @@ const Login = () => {
           <form onSubmit={handleLogin} style={styles.form}>
             <input
               type="email"
+              name="email"
               placeholder="Email address"
               style={styles.input}
               required
+              value={form.email}
+              onChange={handleChange}
             />
             <input
               type="password"
+              name="password"
               placeholder="Password"
               style={styles.input}
               required
+              value={form.password}
+              onChange={handleChange}
             />
 
-            <button type="submit" style={styles.button}>
-              Login →
+            {error && <div style={{ color: "#ef4444" }}>{error}</div>}
+
+            <button type="submit" style={styles.button} disabled={loading}>
+              {loading ? "Logging in..." : "Login →"}
             </button>
+
+            <div style={{ marginTop: "12px", fontSize: "14px" }}>
+              Don't have an account? <Link to="/register">Register</Link>
+            </div>
           </form>
         </div>
       </div>

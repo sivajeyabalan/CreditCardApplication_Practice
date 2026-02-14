@@ -1,16 +1,46 @@
 import { useState } from "react";
+import { getApplicationDetail } from "../api/applicationApi";
 
 const TrackStatus = () => {
   const [id, setId] = useState("");
   const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleTrack = () => {
-    setData({
-      status: "Approved",
-      cardType: "Platinum",
-      appliedOn: "12 Feb 2026",
-      creditLimit: "₹2,00,000",
-    });
+  const getErrorMessage = (err) => {
+    if (!err) return "Failed to fetch status";
+    const resp = err.response?.data;
+    if (!resp) return err.message || "Failed to fetch status";
+    if (typeof resp === 'string') return resp;
+    if (typeof resp === 'object') return resp.message || JSON.stringify(resp);
+    return String(resp);
+  };
+
+  const handleTrack = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const res = await getApplicationDetail(id);
+      setData(res);
+    } catch (err) {
+      setError(getErrorMessage(err));
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (d) => {
+    try {
+      return new Date(d).toLocaleString();
+    } catch (e) {
+      return d || "-";
+    }
+  };
+
+  const formatCurrency = (v) => {
+    if (v == null) return "-";
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v);
   };
 
   return (
@@ -27,10 +57,12 @@ const TrackStatus = () => {
           onChange={(e) => setId(e.target.value)}
           style={styles.input}
         />
-        <button onClick={handleTrack} style={styles.button}>
-          Track Now
+        <button onClick={handleTrack} style={styles.button} disabled={loading || !id}>
+          {loading ? "Tracking..." : "Track Now"}
         </button>
       </div>
+
+      {error && <div style={{ color: "#ef4444", marginBottom: 12 }}>{error}</div>}
 
       {data && (
         <div style={styles.resultCard}>
@@ -38,16 +70,16 @@ const TrackStatus = () => {
 
           <div style={styles.infoGrid}>
             <div>
-              <h4>Card Type</h4>
-              <p>{data.cardType}</p>
+              <h4>Name</h4>
+              <p>{data.fullName || '-'}</p>
             </div>
             <div>
               <h4>Applied On</h4>
-              <p>{data.appliedOn}</p>
+              <p>{formatDate(data.appliedOn)}</p>
             </div>
             <div>
               <h4>Approved Limit</h4>
-              <p>{data.creditLimit}</p>
+              <p>{formatCurrency(data.creditLimit)}</p>
             </div>
           </div>
         </div>
