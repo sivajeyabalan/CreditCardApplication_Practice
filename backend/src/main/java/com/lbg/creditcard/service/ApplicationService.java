@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.Random;
 import java.util.UUID;
 
 @Service
@@ -47,12 +47,12 @@ public class ApplicationService {
         entity.setUpdatedAt(LocalDateTime.now());
         entity.setStatus(ApplicationStatus.PENDING);
 
-        // Fetch credit score (mocked)
-        Integer creditScore = fetchCreditScore(req.getPanNumber());
-        entity.setCreditScore(creditScore);
+        // Fetch credit score (mocked - random 1-10)
+        Integer creditScore = fetchCreditScore();
 
-        // Decision
-        if (creditScore > 800) {
+
+        // Decision: >= 5 approve, < 5 reject (60% approval rate)
+        if (creditScore >= 5) {
             entity.setStatus(ApplicationStatus.APPROVED);
             entity.setCreditLimit(calculateLimit(req.getAnnualIncome()));
         } else {
@@ -97,11 +97,12 @@ public class ApplicationService {
         return "APP-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    private Integer fetchCreditScore(String pan) {
-        // Mocked credit score: deterministic-ish using PAN hash
-        int hash = Math.abs(pan.hashCode());
-        int score = 300 + (hash % 601); // 300..900
-        return score;
+    private Integer fetchCreditScore() {
+        // Mocked credit score: random 1-10
+        // >= 5 = APPROVED (60% chance)
+        // < 5 = REJECTED (40% chance)
+        Random random = new Random();
+        return random.nextInt(10) + 1; // 1..10
     }
 
     private Double calculateLimit(Double income) {
