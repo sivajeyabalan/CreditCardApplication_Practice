@@ -31,6 +31,8 @@ jobs:
       # 4️⃣ Build project
       - name: Build with Maven
         run: mvn clean verify
+        working-directory: backend
+
 
       # 5️⃣ Login to Docker Hub
       - name: Docker Login
