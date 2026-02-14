@@ -2,8 +2,11 @@ package com.lbg.creditcard.service;
 
 import com.lbg.creditcard.Entity.ApplicationStatus;
 import com.lbg.creditcard.Entity.CreditCardApplication;
+import com.lbg.creditcard.dto.ApplicationDetailDTO;
 import com.lbg.creditcard.dto.ApplicationRequestDTO;
 import com.lbg.creditcard.dto.ApplicationResponseDTO;
+import com.lbg.creditcard.dto.DashboardDTO;
+import com.lbg.creditcard.dto.RecentApplicationDTO;
 import com.lbg.creditcard.exception.BusinessException;
 import com.lbg.creditcard.repository.ApplicationRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +16,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -90,6 +95,37 @@ public class ApplicationService {
         applicationRepository.save(app);
 
         return new ApplicationResponseDTO(app.getApplicationNumber(), app.getStatus(), app.getCreditLimit());
+    }
+
+    // New: build dashboard DTO
+    public DashboardDTO getDashboard() {
+        long total = applicationRepository.count();
+        long approved = applicationRepository.findAll().stream().filter(a -> a.getStatus() == ApplicationStatus.APPROVED).count();
+        long pending = applicationRepository.findAll().stream().filter(a -> a.getStatus() == ApplicationStatus.PENDING).count();
+        long rejected = applicationRepository.findAll().stream().filter(a -> a.getStatus() == ApplicationStatus.REJECTED).count();
+
+        // recent 5 applications sorted by createdAt desc
+        List<RecentApplicationDTO> recent = applicationRepository.findAll().stream()
+                .sorted(Comparator.comparing(CreditCardApplication::getCreatedAt).reversed())
+                .limit(5)
+                .map(a -> new RecentApplicationDTO(a.getFullName(), a.getApplicationNumber(), a.getStatus(), a.getCreditLimit(), a.getCreatedAt() != null ? a.getCreatedAt().toString() : null))
+                .collect(Collectors.toList());
+
+        return new DashboardDTO(total, approved, pending, rejected, recent);
+    }
+
+    public ApplicationDetailDTO getApplicationDetail(String applicationNumber) {
+        CreditCardApplication application = applicationRepository.findByApplicationNumber(applicationNumber)
+                .orElseThrow(() -> new BusinessException("Application not found"));
+
+        return new ApplicationDetailDTO(
+                application.getApplicationNumber(),
+                application.getStatus(),
+                application.getCreditLimit(),
+                application.getFullName(),
+                application.getCreatedAt() != null ? application.getCreatedAt().toString() : null,
+                application.getPanNumber()
+        );
     }
 
     // --- Helpers ---
