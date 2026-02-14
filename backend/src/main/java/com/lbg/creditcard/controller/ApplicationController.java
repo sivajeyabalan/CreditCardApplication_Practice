@@ -1,6 +1,7 @@
 package com.lbg.creditcard.controller;
 
 import com.lbg.creditcard.Entity.CreditCardApplication;
+import com.lbg.creditcard.dto.ApplicationDetailDTO;
 import com.lbg.creditcard.dto.ApplicationRequestDTO;
 import com.lbg.creditcard.dto.ApplicationResponseDTO;
 import com.lbg.creditcard.exception.BusinessException;
@@ -29,6 +30,12 @@ public class ApplicationController {
     public ResponseEntity<ApplicationResponseDTO> getByAppNo(@PathVariable String applicationNumber) {
         ApplicationResponseDTO resp = applicationService.getByApplicationNumber(applicationNumber);
         return ResponseEntity.ok(resp);
+    }
+
+    @GetMapping("/{applicationNumber}/detail")
+    public ResponseEntity<ApplicationDetailDTO> getDetail(@PathVariable String applicationNumber) {
+        ApplicationDetailDTO dto = applicationService.getApplicationDetail(applicationNumber);
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/status")
