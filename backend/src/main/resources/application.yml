@@ -7,7 +7,7 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb://admin:password@localhost:27018/creditcarddb?authSource=admin
+      uri: mongodb+srv://ragulgopinath2005:admin@cluster0.ykm7wpu.mongodb.net/creditcarddb?retryWrites=true&w=majority
 
   jackson:
     serialization:
@@ -30,9 +30,8 @@ management:
       show-details: always
 
 jwt:
-  secret: sljfkdfsddkfjdfjsfldkfownvowndndsdwnds
-
-  expiration: 86400000   # 1 day (milliseconds)
+  secret: sljfkdfsddkfjdfjsfldkfownvowndndsdwndssdgfdijguirghruehuyrrgdrgger
+  expiration: 86400000   # 1 day
 
 app:
   cors:
