@@ -1,0 +1,17 @@
+# Spring Boot config
+src/main/resources/application.yml
+# Logs
+logs/
+# Target directory
+target/
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+# OS files
+.DS_Store
+Thumbs.db
+# Maven wrapper files
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
