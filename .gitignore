@@ -74,3 +74,20 @@ failsafe-reports/
 *.tmp
 *.swp
 .env
+
+
+# Spring Boot config
+src/main/resources/application.yml
+# Logs
+
+# Target directory
+
+# IDE files
+
+*.ipr
+*.iws
+# OS files
+
+# Maven wrapper files
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
