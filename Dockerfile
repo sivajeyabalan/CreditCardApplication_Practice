@@ -17,6 +17,6 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 
 # Render provides PORT env variable - Spring Boot will use server.port from application.yml
-EXPOSE 8081
+EXPOSE 8080
 
-ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx512m", "-Xms256m", "-Djava.net.preferIPv4Stack=true", "-jar", "app.jar"]
