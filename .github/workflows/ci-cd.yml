@@ -31,7 +31,6 @@ jobs:
       # 4️⃣ Build project
       - name: Build with Maven
         run: mvn clean verify
-        working-directory: backend
 
 
       # 5️⃣ Login to Docker Hub
@@ -43,7 +42,7 @@ jobs:
 
       # 6️⃣ Build Docker image
       - name: Build Docker Image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/credit-card-backend:latest ./backend
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/credit-card-backend:latest .
 
 
       # 7️⃣ Push Docker image
