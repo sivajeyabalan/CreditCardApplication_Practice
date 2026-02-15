@@ -15,3 +15,4 @@ Thumbs.db
 # Maven wrapper files
 .mvn/wrapper/maven-wrapper.jar
 .mvn/wrapper/maven-wrapper.properties
+.env
